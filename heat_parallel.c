@@ -84,27 +84,28 @@ int main(int argc, char *argv[]) {
         
         // Exchange boundary data with neighbors
         MPI_Request send_req[2], recv_req[2];
+        int req_count = 0;
         
-        // Send top row to previous process (if not first process)
+        // Send top row to previous process and receive top ghost cell (if not first process)
+        // Tag: use rank of sender so receiver knows who sent it
         if (rank > 0) {
-            MPI_Isend(&u[1][0], NY, MPI_DOUBLE, rank - 1, 0, MPI_COMM_WORLD, &send_req[0]);
-            MPI_Irecv(&u[0][0], NY, MPI_DOUBLE, rank - 1, 0, MPI_COMM_WORLD, &recv_req[0]);
+            MPI_Isend(&u[1][0], NY, MPI_DOUBLE, rank - 1, rank, MPI_COMM_WORLD, &send_req[req_count]);
+            MPI_Irecv(&u[0][0], NY, MPI_DOUBLE, rank - 1, rank - 1, MPI_COMM_WORLD, &recv_req[req_count]);
+            req_count++;
         }
         
-        // Send bottom row to next process (if not last process)
+        // Send bottom row to next process and receive bottom ghost cell (if not last process)
         if (rank < size - 1) {
-            MPI_Isend(&u[local_nx][0], NY, MPI_DOUBLE, rank + 1, 1, MPI_COMM_WORLD, &send_req[1]);
-            MPI_Irecv(&u[local_nx + 1][0], NY, MPI_DOUBLE, rank + 1, 1, MPI_COMM_WORLD, &recv_req[1]);
+            MPI_Isend(&u[local_nx][0], NY, MPI_DOUBLE, rank + 1, rank, MPI_COMM_WORLD, &send_req[req_count]);
+            MPI_Irecv(&u[local_nx + 1][0], NY, MPI_DOUBLE, rank + 1, rank + 1, MPI_COMM_WORLD, &recv_req[req_count]);
+            req_count++;
         }
         
-        // Wait for boundary exchanges to complete
-        if (rank > 0) {
-            MPI_Wait(&send_req[0], MPI_STATUS_IGNORE);
-            MPI_Wait(&recv_req[0], MPI_STATUS_IGNORE);
-        }
-        if (rank < size - 1) {
-            MPI_Wait(&send_req[1], MPI_STATUS_IGNORE);
-            MPI_Wait(&recv_req[1], MPI_STATUS_IGNORE);
+        // Wait for all boundary exchanges to complete
+        if (req_count > 0) {
+            MPI_Status status[2];
+            MPI_Waitall(req_count, send_req, status);
+            MPI_Waitall(req_count, recv_req, status);
         }
         
         // Compute new values using OpenMP
