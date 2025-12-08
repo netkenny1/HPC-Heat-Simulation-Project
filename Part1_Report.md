@@ -46,27 +46,35 @@ Each process calculates its own max_diff, but I need the global maximum to check
 
 My first OpenMP version had race conditions when updating max_diff. I was trying to use a shared variable and update it with a critical section, but it was really slow. My lecturer suggested using reduction, which I didn't know about before. It's much cleaner and faster.
 
+### Problem 5: MPI Deadlock
+
+During testing on the cluster, my parallel code would hang and timeout. I discovered the issue was with MPI tag matching - when processes send/receive boundary data, the tags need to match exactly. I was using fixed tags (0 and 1) which caused a mismatch. I fixed it by using the sender's rank as the tag, so each process knows which tag to expect from which neighbor.
+
 ## 4. Performance Results
 
 ### Test Environment
 
 - Cluster: hpcie.labs.faculty.ie.edu
-- Nodes: 3 nodes
-- Processes per node: 4
-- Total processes: 12
 - Grid size: 500×500
-- Compiler: gcc/9.3.0 with OpenMPI/4.0.3
+- Compiler: gcc/12.3 with OpenMPI/4.1.5
+- Modules: StdEnv/2023
 
 ### Timing
 
 I used MPI_Wtime() to measure execution time. I put the timing around the main iteration loop, so it includes the communication overhead.
 
 **Results:**
-- Serial version: [To be filled after testing]
-- Parallel version (12 processes): [To be filled after testing]
-- Speedup: [To be calculated]
+- Serial version: 0.529 seconds
+- Parallel version (2 processes): 1.765 seconds
+- Parallel version (4 processes): [Check output files]
+- Parallel version (8 processes): [Check output files]
 
-I expect the parallel version to be faster, but I'm curious to see how much the communication overhead affects things. The boundary exchanges happen every iteration, so that could be a bottleneck.
+**Observations:**
+With 2 processes, the parallel version was actually slower than serial (1.765s vs 0.529s). This is because the communication overhead dominates for this problem size. The 500×500 grid is relatively small, so the time spent exchanging boundary data between processes outweighs the computation time saved by parallelization. For larger grids, the parallel version should show better speedup.
+
+**Speedup Analysis:**
+- 2 processes: Speedup = 0.529/1.765 = 0.30 (slower due to overhead)
+- The problem size may be too small to benefit from parallelization at this scale
 
 ### What I Noticed
 

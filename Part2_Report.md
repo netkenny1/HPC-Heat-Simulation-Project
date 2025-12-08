@@ -68,11 +68,14 @@ I tested on Google Colab because the HPC cluster GPU nodes weren't available whe
 I used CUDA events to measure time, which is more accurate than regular timing for GPU code. The timing includes the kernel execution but not the initial memory transfers.
 
 **Results:**
-- CPU parallel version: [To be filled]
-- GPU version: [To be filled]
-- Speedup: [To be calculated]
+- CPU parallel version: 0.529 seconds (serial), 1.765 seconds (2 processes)
+- GPU version: **Not tested successfully** - CUDA driver/runtime version mismatch on cluster
 
-I'm curious to see if the GPU is actually faster for this problem size. With only 500×500 grid points, the GPU might not be fully utilized, and the memory transfer overhead might hurt performance.
+**GPU Testing Issue:**
+I encountered a CUDA driver version incompatibility on the HPC cluster. The GPU nodes have CUDA driver 12.4, but the available CUDA runtime modules (10.1, 10.2) are incompatible with the driver. Attempts to use CUDA 12.2 also failed due to module loading issues. The code compiles correctly but fails at runtime with "CUDA driver version is insufficient for CUDA runtime version" error.
+
+**Alternative Testing:**
+The code was designed to work and follows CUDA best practices. For a 500×500 grid, the GPU might not show significant speedup due to memory transfer overhead, but it would be interesting to test with larger problem sizes.
 
 ### What I Noticed
 
