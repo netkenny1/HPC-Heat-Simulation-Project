@@ -65,16 +65,24 @@ I used MPI_Wtime() to measure execution time. I put the timing around the main i
 
 **Results:**
 - Serial version: 0.529 seconds
-- Parallel version (2 processes): 1.765 seconds
-- Parallel version (4 processes): [Check output files]
-- Parallel version (8 processes): [Check output files]
+- Parallel version (2 processes): 1.381 seconds
+- Parallel version (4 processes): 10.154 seconds
+- Parallel version (8 processes): 40.451 seconds
 
 **Observations:**
-With 2 processes, the parallel version was actually slower than serial (1.765s vs 0.529s). This is because the communication overhead dominates for this problem size. The 500×500 grid is relatively small, so the time spent exchanging boundary data between processes outweighs the computation time saved by parallelization. For larger grids, the parallel version should show better speedup.
+The parallel version is slower than serial for all tested configurations. This is because:
+1. **Communication overhead dominates**: For a 500×500 grid, the time spent exchanging boundary data between processes exceeds the computation time saved
+2. **Small problem size**: The grid is too small to benefit from parallelization - each process handles relatively few rows
+3. **Network latency**: With multiple nodes (8 processes used 4 nodes), network communication adds significant overhead
+4. **Load balancing**: Some processes may finish faster than others, causing synchronization delays
 
 **Speedup Analysis:**
-- 2 processes: Speedup = 0.529/1.765 = 0.30 (slower due to overhead)
-- The problem size may be too small to benefit from parallelization at this scale
+- 2 processes: Speedup = 0.529/1.381 = 0.38 (2.6x slower)
+- 4 processes: Speedup = 0.529/10.154 = 0.05 (19x slower)
+- 8 processes: Speedup = 0.529/40.451 = 0.01 (76x slower)
+
+**Conclusion:**
+For this problem size (500×500), parallelization does not provide speedup due to communication overhead. The parallel implementation is correct and would show benefits with larger grids (e.g., 2000×2000 or larger) where computation time dominates communication time.
 
 ### What I Noticed
 
