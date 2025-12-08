@@ -149,6 +149,10 @@ int main(int argc, char *argv[]) {
     // Gather data to rank 0 for VTK output
     if (rank == 0) {
         double *full_grid = (double *)malloc(NX * NY * sizeof(double));
+        if (full_grid == NULL) {
+            fprintf(stderr, "Memory allocation failed on rank 0\n");
+            MPI_Abort(MPI_COMM_WORLD, 1);
+        }
         
         // Copy rank 0's data
         for (i = 1; i <= local_nx; i++) {
@@ -170,6 +174,10 @@ int main(int argc, char *argv[]) {
             }
             
             double *recv_buffer = (double *)malloc(proc_rows * NY * sizeof(double));
+            if (recv_buffer == NULL) {
+                fprintf(stderr, "Memory allocation failed for recv_buffer on rank 0\n");
+                MPI_Abort(MPI_COMM_WORLD, 1);
+            }
             MPI_Recv(recv_buffer, proc_rows * NY, MPI_DOUBLE, proc, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             
             for (i = 0; i < proc_rows; i++) {
@@ -208,6 +216,10 @@ int main(int argc, char *argv[]) {
     } else {
         // Send local data to rank 0
         double *send_buffer = (double *)malloc(local_nx * NY * sizeof(double));
+        if (send_buffer == NULL) {
+            fprintf(stderr, "Memory allocation failed for send_buffer on rank %d\n", rank);
+            MPI_Abort(MPI_COMM_WORLD, 1);
+        }
         for (i = 1; i <= local_nx; i++) {
             for (j = 0; j < NY; j++) {
                 send_buffer[(i - 1) * NY + j] = u[i][j];

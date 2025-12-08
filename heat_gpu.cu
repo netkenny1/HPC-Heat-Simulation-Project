@@ -56,7 +56,17 @@ __global__ void update_heat_kernel(double *u, double *u_new, int nx, int ny) {
 
 double find_max_diff(double *d_max_diff, int num_blocks) {
     double *h_max_diff = (double *)malloc(num_blocks * sizeof(double));
-    cudaMemcpy(h_max_diff, d_max_diff, num_blocks * sizeof(double), cudaMemcpyDeviceToHost);
+    if (h_max_diff == NULL) {
+        fprintf(stderr, "Memory allocation failed in find_max_diff\n");
+        return 0.0;
+    }
+    
+    cudaError_t err = cudaMemcpy(h_max_diff, d_max_diff, num_blocks * sizeof(double), cudaMemcpyDeviceToHost);
+    if (err != cudaSuccess) {
+        fprintf(stderr, "CUDA memcpy failed in find_max_diff: %s\n", cudaGetErrorString(err));
+        free(h_max_diff);
+        return 0.0;
+    }
     
     double max_val = 0.0;
     for (int i = 0; i < num_blocks; i++) {
